@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GigaOm Radar 2026: Ultimate Decision Platform</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root { --navy: #0F172A; --accent: #3B82F6; }
+        body { font-family: 'Plus Jakarta Sans', 'Prompt', sans-serif; scroll-behavior: smooth; overflow-x: hidden; }
+        .chart-container { position: relative; height: 380px; width: 100%; }
+        .glass-morphism { background: rgba(255, 255, 255, 0.95); border: 1px solid rgba(226, 232, 240, 1); }
+        .dark .glass-morphism { background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .custom-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; background: var(--accent); border-radius: 50%; cursor: pointer; border: 3px solid white; box-shadow: 0 0 5px rgba(59, 130, 246, 0.5); transition: transform 0.1s; }
+        .custom-slider::-webkit-slider-thumb:hover { transform: scale(1.2); }
+        .toast-animate { animation: slideIn 0.3s ease-out forwards; }
+        .modal-animate { animation: fadeIn 0.2s ease-out forwards; }
+        @keyframes slideIn { from { transform: translateY(-100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .dark ::-webkit-scrollbar-thumb { background: #334155; }
+        @media print { .no-print { display: none !important; } }
+        
+        /* Sticky Table CSS Fixes */
+        .table-wrapper { overflow-x: auto; max-width: 100%; position: relative; }
+        .sticky-header th { position: sticky; top: 0; z-index: 10; background: inherit; }
+        .sticky-col { position: sticky; left: 0; z-index: 11; background: inherit; border-right: 1px solid rgba(0,0,0,0.05); }
+        .dark .sticky-col { border-right: 1px solid rgba(255,255,255,0.05); }
+        .sticky-header th.sticky-col { z-index: 12; }
+    </style>
+    <script>
+        tailwind.config = { darkMode: 'class', theme: { extend: { colors: { navy: '#0F172A', accent: '#3B82F6', surface: '#F1F5F9' } } } }
+    </script>
+</head>
+<body class="bg-surface dark:bg-slate-950 transition-all duration-300 text-slate-800 dark:text-slate-200">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useRef } = React;
+
+        const VENDOR_DATA = [
+            { id: 'manageengine', name: 'ManageEngine', group: 'Leader', mover: 'Outperformer', scores: { key: 4.6, emg: 2.0, bus: 4.3 }, prev: 4.0, markets: ['SMB', 'Enterprise'], deployment: ['SaaS', 'Physical', 'Virtual'], info: "ยอดเยี่ยมด้านความคุ้มค่าและ 3D Visualization", strengths: "3D Server Room, Automation Workflows, Global Map", quadrant: {x: 2, y: 1}, sub: { key: { discovery: 4.8, visual: 4.5, traffic: 4.2 }, emg: { ebpf: 1.0, ai: 2.5, ux: 2.5 }, bus: { scale: 4.0, ease: 4.8, cost: 4.9 } }, matrix: { ttv: 'Fast', learning: 'Low' } },
+            { id: 'broadcom', name: 'Broadcom', group: 'Leader', mover: 'Outperformer', scores: { key: 4.5, emg: 1.8, bus: 4.3 }, prev: 4.2, markets: ['Telcos', 'Enterprise', 'CSP'], deployment: ['SaaS', 'Physical'], info: "แพลตฟอร์มใหญ่สำหรับองค์กรระดับ Carrier", strengths: "TruPath Analysis, Full-stack Correlation, Large Scale", quadrant: {x: 2.5, y: -0.5}, sub: { key: { discovery: 4.5, visual: 4.2, traffic: 4.8 }, emg: { ebpf: 1.5, ai: 2.0, ux: 3.0 }, bus: { scale: 4.9, ease: 3.5, cost: 3.8 } }, matrix: { ttv: 'Slow', learning: 'Steep' } },
+            { id: 'solarwinds', name: 'SolarWinds', group: 'Leader', mover: 'Fast Mover', scores: { key: 4.5, emg: 2.8, bus: 4.2 }, prev: 4.1, markets: ['CSP', 'Enterprise', 'SMB'], deployment: ['SaaS', 'Virtual'], info: "ความปลอดภัยสูงและระบบ Container ที่ดี", strengths: "Secure by Design, Hybrid Monitoring, Container Maps", quadrant: {x: 4, y: 0.5}, sub: { key: { discovery: 4.7, visual: 4.0, traffic: 4.5 }, emg: { ebpf: 2.5, ai: 3.0, ux: 2.8 }, bus: { scale: 4.3, ease: 4.5, cost: 4.0 } }, matrix: { ttv: 'Fast', learning: 'Medium' } },
+            { id: 'kentik', name: 'Kentik', group: 'Leader', mover: 'Fast Mover', scores: { key: 4.4, emg: 3.0, bus: 3.7 }, prev: 3.6, markets: ['CSP', 'CDN', 'Enterprise'], deployment: ['SaaS', 'Virtual'], info: "ผู้นำด้าน Cloud-native และ eBPF พร้อม AI Advisor", strengths: "AI Advisor, eBPF Kube Monitoring, Cost Forecasting", quadrant: {x: 5, y: -3}, sub: { key: { discovery: 4.2, visual: 4.8, traffic: 4.9 }, emg: { ebpf: 4.8, ai: 3.5, ux: 2.5 }, bus: { scale: 4.5, ease: 4.0, cost: 3.5 } }, matrix: { ttv: 'Fast', learning: 'Medium' } },
+            { id: 'bluecat', name: 'BlueCat Networks', group: 'Leader', mover: 'Outperformer', scores: { key: 4.4, emg: 2.7, bus: 3.5 }, prev: 4.1, markets: ['CDN', 'Enterprise'], deployment: ['Physical', 'Virtual'], info: "โดดเด่นด้วย DNS-level insights ผสาน Flow Analysis", strengths: "DNS Insights, Real-time Forensics, LiveNX Assurance", quadrant: {x: 6, y: -2}, sub: { key: { discovery: 4.0, visual: 4.2, traffic: 4.6 }, emg: { ebpf: 2.0, ai: 3.2, ux: 3.5 }, bus: { scale: 4.0, ease: 4.2, cost: 3.8 } }, matrix: { ttv: 'Medium', learning: 'Medium' } },
+            { id: 'riverbed', name: 'Riverbed', group: 'Leader', mover: 'Fast Mover', scores: { key: 4.1, emg: 3.7, bus: 4.0 }, prev: 3.8, markets: ['CSP', 'Telcos', 'Enterprise'], deployment: ['Physical', 'SaaS', 'Virtual'], info: "แข็งแกร่งที่สุดในด้านเทคโนโลยีใหม่ (Agentic AI)", strengths: "Agentic AI, Full Packet Storage, Unified Agent", quadrant: {x: 4.5, y: -1.5}, sub: { key: { discovery: 4.0, visual: 4.5, traffic: 4.2 }, emg: { ebpf: 3.5, ai: 4.5, ux: 4.2 }, bus: { scale: 4.2, ease: 3.8, cost: 3.5 } }, matrix: { ttv: 'Medium', learning: 'Steep' } },
+            { id: 'netscout', name: 'NETSCOUT', group: 'Leader', mover: 'Outperformer', scores: { key: 4.3, emg: 1.8, bus: 3.8 }, prev: 4.0, markets: ['Telcos', 'Enterprise', 'CSP'], deployment: ['Physical', 'Virtual'], info: "เชี่ยวชาญด้าน Packet Analysis ระดับลึก (ASI)", strengths: "ASI Technology, Real-time Mining, nGeniusONE", quadrant: {x: 3.5, y: 1}, sub: { key: { discovery: 4.2, visual: 4.0, traffic: 4.9 }, emg: { ebpf: 2.5, ai: 1.5, ux: 2.0 }, bus: { scale: 4.8, ease: 3.0, cost: 3.0 } }, matrix: { ttv: 'Slow', learning: 'Steep' } },
+            { id: 'logicmonitor', name: 'LogicMonitor', group: 'Leader', mover: 'Fast Mover', scores: { key: 3.9, emg: 2.2, bus: 3.8 }, prev: 3.8, markets: ['CSP', 'Enterprise'], deployment: ['SaaS'], info: "SaaS ที่ขยายตัวได้ดี ใช้งานง่าย มี ecosystem กว้าง", strengths: "CatchPoint DEM, 3000+ Integrations, Edwin AI", quadrant: {x: 5.5, y: 3}, sub: { key: { discovery: 4.5, visual: 4.0, traffic: 3.5 }, emg: { ebpf: 1.5, ai: 3.0, ux: 3.5 }, bus: { scale: 4.5, ease: 4.5, cost: 4.0 } }, matrix: { ttv: 'Fast', learning: 'Low' } },
+            { id: 'sciencelogic', name: 'ScienceLogic', group: 'Challenger', mover: 'Fast Mover', scores: { key: 3.8, emg: 1.8, bus: 3.8 }, prev: 3.7, markets: ['Enterprise', 'CSP'], deployment: ['SaaS', 'Virtual', 'Physical'], info: "เน้น AIOps สำหรับ Automated RCA และ Remediation", strengths: "Skylar AI Advisor, Dynamic Topology, Compliance", quadrant: {x: 4.5, y: -5}, sub: { key: { discovery: 4.2, visual: 3.8, traffic: 3.5 }, emg: { ebpf: 1.0, ai: 3.5, ux: 2.0 }, bus: { scale: 4.2, ease: 3.8, cost: 3.5 } }, matrix: { ttv: 'Medium', learning: 'Medium' } },
+            { id: 'auvik', name: 'Auvik', group: 'Challenger', mover: 'Fast Mover', scores: { key: 2.6, emg: 1.2, bus: 3.5 }, prev: 2.5, markets: ['SMB'], deployment: ['SaaS'], info: "เหมาะสำหรับตลาด SMB เน้นความง่ายในการใช้งาน", strengths: "Auto Mapping, Asset Management Lifecycle, SMB Focus", quadrant: {x: -6, y: 6}, sub: { key: { discovery: 4.8, visual: 3.0, traffic: 2.5 }, emg: { ebpf: 0.5, ai: 1.0, ux: 2.0 }, bus: { scale: 3.0, ease: 4.9, cost: 4.5 } }, matrix: { ttv: 'Fast', learning: 'Low' } },
+            { id: 'netbrain', name: 'NetBrain', group: 'Challenger', mover: 'Fast Mover', scores: { key: 2.6, emg: 1.5, bus: 3.3 }, prev: 2.5, markets: ['Enterprise'], deployment: ['Virtual'], info: "โดดเด่นด้าน No-code Automation และ Digital Twin", strengths: "Digital Twin, No-code Automation, Intent Technology", quadrant: {x: -7, y: 5}, sub: { key: { discovery: 4.0, visual: 4.5, traffic: 2.0 }, emg: { ebpf: 0.5, ai: 2.0, ux: 1.0 }, bus: { scale: 3.5, ease: 3.0, cost: 3.0 } }, matrix: { ttv: 'Slow', learning: 'Steep' } }
+        ];
+
+        const CHART_COLORS = ['#3B82F6', '#F43F5E', '#10B981', '#F59E0B', '#8B5CF6'];
+        const CHART_BG = ['rgba(59,130,246,0.15)', 'rgba(244,63,94,0.15)', 'rgba(16,185,129,0.15)', 'rgba(245,158,11,0.15)', 'rgba(139,92,246,0.15)'];
+
+        const STRATEGIC_PRESETS = [
+            { label: 'Maturity', icon: 'shield-check', w: {key:40, emg:10, bus:50}, color: 'text-emerald-500' },
+            { label: 'Innovation', icon: 'zap', w: {key:30, emg:40, bus:30}, color: 'text-purple-500' },
+            { label: 'Feature Play', icon: 'layers', w: {key:60, emg:20, bus:20}, color: 'text-orange-500' },
+            { label: 'Platform Play', icon: 'globe', w: {key:40, emg:20, bus:40}, color: 'text-blue-500' },
+            { label: 'Balanced Value', icon: 'scale', w: {key:34, emg:33, bus:33}, color: 'text-teal-500' },
+            { label: 'Future-Proof', icon: 'rocket', w: {key:20, emg:50, bus:30}, color: 'text-rose-500' }
+        ];
+
+        // Safe Storage Parser to prevent WSOD
+        const getSafeStorage = (key, defaultVal) => {
+            try { const item = localStorage.getItem(key); return item ? JSON.parse(item) : defaultVal; } 
+            catch (e) { return defaultVal; }
+        };
+
+        const MicroBar = ({ score, colorClass }) => (
+            <div className="flex items-center gap-3">
+                <div className="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                    <div className={`h-full ${colorClass} transition-all duration-500`} style={{ width: `${(score / 5) * 100}%` }}></div>
+                </div>
+                <span className="text-xs font-mono font-bold w-6 text-right text-slate-700 dark:text-slate-300">{score.toFixed(1)}</span>
+            </div>
+        );
+
+        // Fixed SVG Sort Icon for guaranteed rendering
+        const SortIcon = ({ columnKey, sortConfig }) => {
+            const isActive = sortConfig.key === columnKey;
+            const dir = sortConfig.direction;
+            if (!isActive) return (
+                <svg className="inline w-3 h-3 ml-1 opacity-40 hover:opacity-100 transition-opacity" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg>
+            );
+            if (dir === 'asc') return (
+                <svg className="inline w-4 h-4 ml-1 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+            );
+            return (
+                <svg className="inline w-4 h-4 ml-1 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            );
+        };
+
+        const HelpModal = ({ isOpen, onClose }) => {
+            if (!isOpen) return null;
+            return (
+                <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto relative modal-animate border border-slate-200 dark:border-slate-700">
+                        <button onClick={onClose} className="absolute top-6 right-6 p-3 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-accent hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"><i data-lucide="x" className="w-6 h-6"></i></button>
+                        <div className="p-8 md:p-12">
+                            <h2 className="text-2xl md:text-3xl font-black mb-3 flex items-center gap-4 dark:text-white">
+                                <div className="p-4 bg-accent/10 text-accent rounded-2xl"><i data-lucide="book-open" className="w-8 h-8"></i></div> คู่มือการใช้งานระบบ
+                            </h2>
+                            <p className="text-sm md:text-base text-slate-500 mb-10 font-medium">Ultimate Decision Platform สำหรับการวิเคราะห์ GigaOm Radar 2026</p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div className="space-y-6">
+                                    <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm">
+                                        <h3 className="text-sm font-bold flex items-center gap-2 mb-3 dark:text-white"><i data-lucide="crosshair" className="w-5 h-5 text-accent"></i> Strategic Presets</h3>
+                                        <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">คลิกปุ่มสำเร็จรูปเพื่อปรับน้ำหนักตามความต้องการ เช่น <b>Maturity</b> (เน้นความมั่นคง) หรือ <b>Innovation</b> (เน้นความล้ำสมัย)</p>
+                                    </div>
+                                    <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm">
+                                        <h3 className="text-sm font-bold flex items-center gap-2 mb-3 dark:text-white"><i data-lucide="target" className="w-5 h-5 text-accent"></i> Baseline Analysis</h3>
+                                        <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">คลิกไอคอน 🎯 ในตารางเพื่อตั้ง Vendor นั้นเป็นตัวเปรียบเทียบหลัก ระบบจะแสดงส่วนต่างคะแนน (+/-) ของเจ้าอื่นๆ ทันที</p>
+                                    </div>
+                                </div>
+                                <div className="space-y-6">
+                                    <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm">
+                                        <h3 className="text-sm font-bold flex items-center gap-2 mb-3 dark:text-white"><i data-lucide="chevrons-up-down" className="w-5 h-5 text-accent"></i> Matrix Sorting</h3>
+                                        <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">คลิกที่หัวตาราง <b>Vendor, Key, Emg, Bus, AVG หรือ YoY</b> ใน Evaluation Matrix เพื่อเรียงลำดับคะแนนได้อิสระ</p>
+                                    </div>
+                                    <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm">
+                                        <h3 className="text-sm font-bold flex items-center gap-2 mb-3 dark:text-white"><i data-lucide="plus-square" className="w-5 h-5 text-accent"></i> Deep-Dive Matrix</h3>
+                                        <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">คลิก <b>(+)</b> ในตาราง Matrix เพื่อดูรายละเอียดจุดแข็งย่อย (Micro-scores) และตัวชี้วัดความยากในการติดตั้ง (ROI Matrix)</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const Dashboard = () => {
+            const getInitialState = () => {
+                const params = new URLSearchParams(window.location.search);
+                const v = params.get('v');
+                const w = params.get('w');
+                let selected = ['kentik', 'broadcom', 'solarwinds'];
+                let wgts = { key: 45, emg: 15, bus: 40 };
+                if (v) selected = v.split(',');
+                if (w) { const [k, e, b] = w.split(',').map(Number); wgts = { key: k||45, emg: e||15, bus: b||40 }; }
+                return { selected, wgts };
+            };
+
+            const initialState = getInitialState();
+            const [selectedIds, setSelectedIds] = useState(() => getSafeStorage('gigaom_v6_sel', initialState.selected));
+            const [weights, setWeights] = useState(() => getSafeStorage('gigaom_v6_wgt', initialState.wgts));
+            const [filterMarket, setFilterMarket] = useState('All');
+            const [darkMode, setDarkMode] = useState(() => getSafeStorage('gigaom_v6_dark', false));
+            const [chartType, setChartType] = useState('quadrant'); 
+            const [baselineId, setBaselineId] = useState(null); 
+            const [expandedId, setExpandedId] = useState(null); 
+            const [toast, setToast] = useState('');
+            const [showHelp, setShowHelp] = useState(false); 
+            
+            // Sorting State initialized
+            const [sortConfig, setSortConfig] = useState({ key: 'rawAvg', direction: 'desc' }); 
+
+            const chartRef = useRef(null);
+            const chartInstance = useRef(null);
+
+            useEffect(() => { 
+                if (darkMode) document.documentElement.classList.add('dark'); 
+                else document.documentElement.classList.remove('dark'); 
+                localStorage.setItem('gigaom_v6_dark', JSON.stringify(darkMode));
+            }, [darkMode]);
+
+            useEffect(() => {
+                const url = new URL(window.location);
+                url.searchParams.set('v', selectedIds.join(','));
+                url.searchParams.set('w', `${weights.key},${weights.emg},${weights.bus}`);
+                window.history.replaceState({}, '', url);
+                
+                localStorage.setItem('gigaom_v6_sel', JSON.stringify(selectedIds));
+                localStorage.setItem('gigaom_v6_wgt', JSON.stringify(weights));
+
+                // Safe timeout for Lucide Icons
+                const timeoutId = setTimeout(() => { if (window.lucide) window.lucide.createIcons(); }, 20);
+                return () => clearTimeout(timeoutId);
+            }, [selectedIds, filterMarket, toast, darkMode, chartType, weights, baselineId, expandedId, showHelp, sortConfig]);
+
+            const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
+
+            const copyShareLink = () => {
+                navigator.clipboard.writeText(window.location.href);
+                showToast("🔗 คัดลอกลิงก์สำหรับแชร์ให้ทีมเรียบร้อยแล้ว!");
+            };
+
+            const handleWeightChange = (key, val) => {
+                const newValue = parseInt(val);
+                const others = Object.keys(weights).filter(k => k !== key);
+                const targetOthersSum = 100 - newValue;
+                const currentOthersSum = weights[others[0]] + weights[others[1]];
+                let newWeights = { ...weights, [key]: newValue };
+                if (currentOthersSum > 0) {
+                    newWeights[others[0]] = Math.round((weights[others[0]] / currentOthersSum) * targetOthersSum);
+                    newWeights[others[1]] = targetOthersSum - newWeights[others[0]];
+                } else {
+                    newWeights[others[0]] = Math.floor(targetOthersSum / 2);
+                    newWeights[others[1]] = targetOthersSum - newWeights[others[0]];
+                }
+                setWeights(newWeights);
+            };
+
+            const requestSort = (key) => {
+                let direction = 'desc';
+                if (sortConfig.key === key && sortConfig.direction === 'desc') direction = 'asc';
+                setSortConfig({ key, direction });
+            };
+
+            const toggleVendorSelection = (v_id) => {
+                if(selectedIds.includes(v_id)) {
+                    setSelectedIds(selectedIds.filter(id => id !== v_id));
+                    if(baselineId === v_id) setBaselineId(null);
+                } else {
+                    if(selectedIds.length < 5) setSelectedIds([...selectedIds, v_id]);
+                    else showToast("เปรียบเทียบได้สูงสุด 5 รายการ");
+                }
+            };
+
+            const processedData = useMemo(() => {
+                let data = VENDOR_DATA.map(v => {
+                    const avg = (((v.scores.key * weights.key) + (v.scores.emg * weights.emg) + (v.scores.bus * weights.bus)) / 100);
+                    return { ...v, avg: avg.toFixed(2), rawAvg: avg, yoyDiff: (avg - v.prev).toFixed(2) };
+                }).filter(v => filterMarket === 'All' || v.markets.some(m => m.includes(filterMarket)));
+
+                data.sort((a, b) => {
+                    if (sortConfig.key === 'name') {
+                        return sortConfig.direction === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
+                    }
+                    let aValue = sortConfig.key === 'key' ? a.scores.key : (sortConfig.key === 'emg' ? a.scores.emg : (sortConfig.key === 'bus' ? a.scores.bus : (sortConfig.key === 'yoyDiff' ? parseFloat(a.yoyDiff) : a.rawAvg)));
+                    let bValue = sortConfig.key === 'key' ? b.scores.key : (sortConfig.key === 'emg' ? b.scores.emg : (sortConfig.key === 'bus' ? b.scores.bus : (sortConfig.key === 'yoyDiff' ? parseFloat(b.yoyDiff) : b.rawAvg)));
+                    
+                    if (aValue === bValue) return a.name.localeCompare(b.name);
+                    return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
+                });
+                
+                if (baselineId) {
+                    const baseline = data.find(v => v.id === baselineId);
+                    if (baseline) {
+                        data = data.map(v => ({
+                            ...v,
+                            gap: {
+                                key: (v.scores.key - baseline.scores.key).toFixed(1),
+                                emg: (v.scores.emg - baseline.scores.emg).toFixed(1),
+                                bus: (v.scores.bus - baseline.scores.bus).toFixed(1),
+                                avg: (v.rawAvg - baseline.rawAvg).toFixed(2)
+                            }
+                        }));
+                    }
+                }
+                return data;
+            }, [weights, filterMarket, baselineId, sortConfig]);
+
+            useEffect(() => {
+                if (chartInstance.current) chartInstance.current.destroy();
+                const ctx = chartRef.current.getContext('2d');
+                const selected = processedData.filter(v => selectedIds.includes(v.id));
+                
+                let config = {};
+                if (chartType === 'quadrant') {
+                    config = {
+                        type: 'scatter',
+                        data: {
+                            datasets: selected.map((v) => {
+                                const isBaseline = baselineId === v.id;
+                                return {
+                                    label: v.name,
+                                    data: [{ x: v.quadrant.x, y: v.quadrant.y }],
+                                    backgroundColor: CHART_COLORS[selectedIds.indexOf(v.id) % 5],
+                                    borderColor: isBaseline ? (darkMode ? '#FFF' : '#000') : 'white',
+                                    borderWidth: isBaseline ? 4 : 2,
+                                    pointRadius: 8 + (v.rawAvg * 3), 
+                                    pointHoverRadius: 10 + (v.rawAvg * 3)
+                                };
+                            })
+                        },
+                        options: {
+                            responsive: true, maintainAspectRatio: false,
+                            plugins: {
+                                tooltip: { 
+                                    titleFont: { size: 14, family: 'Prompt' },
+                                    bodyFont: { size: 13, family: 'Prompt' },
+                                    padding: 12,
+                                    callbacks: { label: (ctx) => {
+                                    const s = selected.find(s => s.name === ctx.dataset.label);
+                                    return s ? `${ctx.dataset.label} (Score: ${s.avg})` : ctx.dataset.label;
+                                }}},
+                                legend: { position: 'top', labels: { boxWidth: 14, font: {size: 13, family: 'Prompt'} } }
+                            },
+                            scales: {
+                                x: { min: -10, max: 10, title: { display: true, text: 'Feature Play <--------------------> Platform Play', font: {size: 12, weight: 'bold'}, color: '#94a3b8' }, grid: { color: (ctx) => ctx.tick.value === 0 ? (darkMode ? '#475569' : '#cbd5e1') : (darkMode ? '#1e293b' : '#f1f5f9'), lineWidth: (ctx) => ctx.tick.value === 0 ? 2 : 1 } },
+                                y: { min: -10, max: 10, title: { display: true, text: 'Innovation <--------------------> Maturity', font: {size: 12, weight: 'bold'}, color: '#94a3b8' }, grid: { color: (ctx) => ctx.tick.value === 0 ? (darkMode ? '#475569' : '#cbd5e1') : (darkMode ? '#1e293b' : '#f1f5f9'), lineWidth: (ctx) => ctx.tick.value === 0 ? 2 : 1 } }
+                            }
+                        }
+                    };
+                } else {
+                    config = {
+                        type: chartType,
+                        data: {
+                            labels: ['Key Features', 'Emerging Tech', 'Business Criteria'],
+                            datasets: selected.map((v) => {
+                                const isBaseline = baselineId === v.id;
+                                return {
+                                    label: v.name,
+                                    data: [v.scores.key, v.scores.emg, v.scores.bus],
+                                    borderColor: isBaseline ? (darkMode ? '#FFF' : '#000') : CHART_COLORS[selectedIds.indexOf(v.id) % 5],
+                                    backgroundColor: chartType === 'bar' ? CHART_COLORS[selectedIds.indexOf(v.id) % 5] : CHART_BG[selectedIds.indexOf(v.id) % 5],
+                                    borderWidth: isBaseline ? 3 : 2, 
+                                    pointRadius: 5, 
+                                    borderRadius: chartType === 'bar' ? 6 : 0
+                                };
+                            })
+                        },
+                        options: { 
+                            responsive: true, maintainAspectRatio: false, 
+                            scales: { 
+                                r: chartType === 'radar' ? { beginAtZero: true, max: 5, grid: { color: darkMode ? '#334155' : '#E2E8F0' }, pointLabels: { font: {size: 13, family: 'Prompt'} } } : undefined,
+                                y: chartType === 'bar' ? { beginAtZero: true, max: 5, grid: { color: darkMode ? '#334155' : '#E2E8F0' } } : undefined
+                            },
+                            plugins: { 
+                                tooltip: { titleFont: { size: 14, family: 'Prompt' }, bodyFont: { size: 13, family: 'Prompt' }, padding: 12 },
+                                legend: { position: 'top', labels: { boxWidth: 14, font: {size: 13, family: 'Prompt'} } } 
+                            }
+                        }
+                    };
+                }
+                chartInstance.current = new Chart(ctx, config);
+            }, [selectedIds, processedData, darkMode, chartType, baselineId]);
+
+            const FormatScore = ({ value, isGap }) => {
+                if (!isGap) return <span className="font-semibold text-slate-700 dark:text-slate-300 text-sm">{value}</span>;
+                const num = parseFloat(value);
+                if (num === 0) return <span className="text-slate-400 font-bold text-sm">-</span>;
+                return <span className={`font-black text-sm ${num > 0 ? 'text-emerald-500' : 'text-red-500'}`}>{num > 0 ? '+' : ''}{num}</span>;
+            };
+
+            return (
+                <div className="min-h-screen flex flex-col p-4 md:p-6 gap-6 max-w-[1500px] mx-auto relative">
+                    <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} />
+
+                    {toast && (
+                        <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[110] bg-slate-800 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 toast-animate border border-slate-700">
+                            <i data-lucide="check-circle" className="w-6 h-6 text-emerald-400"></i> <span className="font-bold text-base">{toast}</span>
+                        </div>
+                    )}
+
+                    <header className="flex flex-col md:flex-row justify-between items-center bg-navy text-white px-8 py-6 rounded-[2rem] shadow-xl no-print">
+                        <div className="flex items-center gap-5">
+                            <div className="p-4 bg-accent/20 rounded-2xl"><i data-lucide="activity" className="text-accent w-8 h-8"></i></div>
+                            <div>
+                                <h1 className="text-2xl md:text-3xl font-black tracking-tight uppercase">GigaOm Observability Analyst</h1>
+                                <p className="text-xs text-slate-400 uppercase tracking-widest font-bold mt-1">Strategic Decision-Support System v7.0</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-4 mt-6 md:mt-0">
+                            <button onClick={copyShareLink} className="bg-slate-800 hover:bg-slate-700 px-6 py-3.5 rounded-xl font-bold text-sm flex items-center gap-2 shadow-lg transition-all text-slate-300">
+                                <i data-lucide="link" className="w-5 h-5"></i> Share Link
+                            </button>
+                            <button onClick={() => setShowHelp(true)} className="p-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 transition-all text-slate-300" title="คู่มือการใช้งาน"><i data-lucide="help-circle" className="w-5 h-5"></i></button>
+                            <button onClick={() => setDarkMode(!darkMode)} className="p-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 transition-all text-slate-300"><i data-lucide={darkMode ? 'sun' : 'moon'} className="w-5 h-5"></i></button>
+                            <button onClick={() => window.print()} className="bg-accent hover:bg-blue-600 px-6 py-3.5 rounded-xl font-bold text-sm flex items-center gap-2 shadow-lg transition-all active:scale-95"><i data-lucide="printer" className="w-5 h-5"></i> PDF</button>
+                        </div>
+                    </header>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                        <aside className="lg:col-span-3 space-y-6 no-print sticky top-6">
+                            <div className="glass-morphism p-6 rounded-3xl shadow-sm">
+                                <div className="flex justify-between items-center mb-5"><h2 className="text-xs font-black text-slate-500 uppercase tracking-widest flex items-center gap-2"><i data-lucide="crosshair" className="w-4 h-4"></i> Strategic Presets</h2><button onClick={() => setWeights({key:45, emg:15, bus:40})} className="text-xs bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg text-slate-500 hover:text-accent font-bold transition-colors">Reset</button></div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    {STRATEGIC_PRESETS.map((p, idx) => (
+                                        <button key={idx} onClick={() => {setWeights(p.w); showToast(`เปิดมุมมอง: ${p.label}`);}} className="p-3 rounded-2xl text-left transition-all border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:border-accent hover:shadow-md group">
+                                            <div className="text-xs font-bold dark:text-white flex items-center gap-2 group-hover:text-accent"><i data-lucide={p.icon} className={`w-4 h-4 ${p.color}`}></i> {p.label}</div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="glass-morphism p-6 rounded-3xl shadow-sm">
+                                <h2 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-6 flex items-center gap-2"><i data-lucide="sliders" className="w-4 h-4"></i> Weight Allocation</h2>
+                                {['key', 'emg', 'bus'].map(k => (
+                                    <div key={k} className="mb-6 last:mb-0">
+                                        <div className="flex justify-between text-xs font-bold mb-3 uppercase"><span className="dark:text-slate-300">{k === 'key' ? 'Key Features' : k === 'emg' ? 'Emerging' : 'Business'}</span><span className="text-accent bg-accent/10 px-2.5 py-1 rounded-lg">{weights[k]}%</span></div>
+                                        <input type="range" className="w-full custom-slider h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none" value={weights[k]} onChange={(e) => handleWeightChange(k, e.target.value)} />
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="glass-morphism p-6 rounded-3xl shadow-sm flex flex-col max-h-[500px]">
+                                <div className="flex justify-between items-center mb-5 shrink-0"><span className="text-xs font-black text-slate-500 uppercase tracking-widest">Vendors Selection</span><div className="flex gap-2 items-center"><button onClick={() => {setSelectedIds([]); setBaselineId(null);}} className="bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-500 hover:text-red-500 transition-colors">Clear All</button><span className="bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg text-xs font-black dark:text-white">{selectedIds.length}/5</span></div></div>
+                                <div className="space-y-2.5 overflow-y-auto pr-2">
+                                    {processedData.map((v) => {
+                                        const isSelected = selectedIds.includes(v.id);
+                                        return (
+                                            <label key={v.id} className={`flex items-center justify-between p-3.5 rounded-2xl cursor-pointer transition-all border-2 ${isSelected ? 'border-accent bg-accent/5 shadow-sm' : 'border-transparent hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}>
+                                                <div className="flex items-center gap-3">
+                                                    <input type="checkbox" checked={isSelected} onChange={() => toggleVendorSelection(v.id)} className="w-4 h-4 rounded text-accent focus:ring-accent" />
+                                                    <span className="text-sm font-bold dark:text-white truncate max-w-[150px]">{v.name} <span className="text-[10px] opacity-50 ml-1">({v.group[0]})</span></span>
+                                                </div>
+                                                {isSelected && <div className="w-3 h-3 rounded-full shadow-sm" style={{backgroundColor: CHART_COLORS[selectedIds.indexOf(v.id) % 5]}}></div>}
+                                            </label>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+                        </aside>
+
+                        <main className="lg:col-span-9 space-y-6 flex flex-col">
+                            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+                                <div className="lg:col-span-3 glass-morphism p-8 rounded-3xl shadow-sm flex flex-col min-h-[480px]">
+                                    <div className="flex justify-between items-center mb-6">
+                                        <h3 className="font-black text-lg flex items-center gap-3 dark:text-white"><i data-lucide="bar-chart-2" className="text-accent w-6 h-6"></i> Analysis Chart</h3>
+                                        <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl no-print">
+                                            {['quadrant', 'radar', 'bar'].map(t => (
+                                                <button key={t} onClick={() => setChartType(t)} className={`px-5 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${chartType === t ? 'bg-white dark:bg-slate-600 shadow-md text-accent dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}>{t}</button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div className="chart-container flex-1"><canvas ref={chartRef}></canvas></div>
+                                </div>
+
+                                <div className="lg:col-span-2 flex flex-col gap-6">
+                                    <div className="bg-gradient-to-br from-accent to-blue-800 p-8 rounded-3xl text-white shadow-xl relative overflow-hidden shrink-0">
+                                        <h3 className="font-black text-sm flex items-center gap-2 mb-3 opacity-90 uppercase tracking-widest"><i data-lucide="award" className="w-5 h-5"></i> Gap Analysis Insight</h3>
+                                        <p className="text-sm leading-relaxed font-medium opacity-100">
+                                            {baselineId ? `โหมด BASELINE: กำลังเทียบความคุ้มค่าและส่วนต่างทางเทคนิคกับ ${processedData.find(v=>v.id===baselineId)?.name} เพื่อพิจารณาการจัดซื้อ` : `โหมดมาตรฐาน: แนะนำให้คลิกปุ่ม 'เป้าหมาย (🎯)' ในตารางด้านล่าง เพื่อเปิดใช้งานโหมดเปรียบเทียบส่วนต่าง (Gap Analysis)`}
+                                        </p>
+                                    </div>
+                                    
+                                    <div className="glass-morphism p-8 rounded-3xl shadow-sm flex-1 overflow-y-auto max-h-[320px]">
+                                        <h3 className="font-black text-xs mb-5 text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800 pb-3">Selected Profiles Detail</h3>
+                                        <div className="space-y-4">
+                                            {processedData.filter(v => selectedIds.includes(v.id)).map(v => (
+                                                <div key={v.id} className="p-5 bg-slate-50 dark:bg-slate-800/80 rounded-2xl border-l-4 shadow-sm" style={{borderLeftColor: CHART_COLORS[selectedIds.indexOf(v.id) % 5]}}>
+                                                    <div className="flex justify-between items-center mb-3 font-bold"><span className="text-sm dark:text-white uppercase tracking-tight">{v.name}</span><span className="text-[10px] px-3 py-1 bg-white dark:bg-slate-700 rounded-lg font-black text-slate-500 dark:text-slate-300">{v.group}</span></div>
+                                                    <p className="text-xs text-slate-500 font-bold mb-2 uppercase tracking-wider">Key Strengths:</p>
+                                                    <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed italic">{v.strengths}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="glass-morphism rounded-3xl shadow-sm overflow-hidden flex-1 border-none ring-1 ring-slate-200 dark:ring-slate-800 relative">
+                                <div className="p-6 bg-slate-50/70 dark:bg-slate-900/50 flex justify-between items-center border-b border-slate-100 dark:border-slate-800 z-20">
+                                    <h3 className="font-black text-base dark:text-white uppercase tracking-tight flex items-center gap-3"><i data-lucide="table" className="w-6 h-6 text-accent"></i> Global Evaluation Matrix</h3>
+                                    <div className="flex gap-4 items-center">
+                                        {baselineId && <button onClick={() => setBaselineId(null)} className="text-xs bg-red-100 text-red-600 px-4 py-2 rounded-lg font-bold hover:bg-red-200 shadow-sm transition-all uppercase">Clear Baseline</button>}
+                                        <span className="text-xs text-slate-500 font-bold hidden md:inline-block bg-white dark:bg-slate-800 px-4 py-2 rounded-lg border border-slate-100 dark:border-slate-700 shadow-sm">CLICK HEADER TO SORT</span>
+                                    </div>
+                                </div>
+                                <div className="table-wrapper max-h-[600px]">
+                                    <table className="w-full text-left border-collapse relative">
+                                        <thead className="text-slate-500 uppercase text-xs font-black tracking-widest sticky-header shadow-sm">
+                                            <tr className="bg-slate-100 dark:bg-slate-900">
+                                                <th className="px-6 py-5 text-center border-b border-slate-200 dark:border-slate-700 sticky-col z-[12]">Action</th>
+                                                <th className="px-5 py-5 cursor-pointer hover:text-accent transition-colors border-b border-slate-200 dark:border-slate-700" onClick={() => requestSort('name')}>
+                                                    <div className="flex items-center gap-2">Vendor <SortIcon columnKey="name" sortConfig={sortConfig} /></div>
+                                                </th>
+                                                <th className="px-5 py-5 text-center cursor-pointer hover:text-accent transition-colors border-b border-slate-200 dark:border-slate-700" onClick={() => requestSort('key')} title="Key Features: ฟีเจอร์พื้นฐาน เช่น Traffic Analysis, Dynamic Discovery และ Packet Analysis">
+                                                    <div className="flex items-center justify-center gap-1.5">Key <SortIcon columnKey="key" sortConfig={sortConfig} /> <i data-lucide="info" className="w-3.5 h-3.5 opacity-40"></i></div>
+                                                </th>
+                                                <th className="px-5 py-5 text-center cursor-pointer hover:text-accent transition-colors border-b border-slate-200 dark:border-slate-700" onClick={() => requestSort('emg')} title="Emerging Tech: เทคโนโลยีใหม่ เช่น eBPF, AI/ML Copilot และ Network Modeling">
+                                                    <div className="flex items-center justify-center gap-1.5">Emg <SortIcon columnKey="emg" sortConfig={sortConfig} /> <i data-lucide="info" className="w-3.5 h-3.5 opacity-40"></i></div>
+                                                </th>
+                                                <th className="px-5 py-5 text-center cursor-pointer hover:text-accent transition-colors border-b border-slate-200 dark:border-slate-700" onClick={() => requestSort('bus')} title="Business Criteria: เกณฑ์ทางธุรกิจ เช่น Scalability, Ease of Use และ Cost Transparency">
+                                                    <div className="flex items-center justify-center gap-1.5">Bus <SortIcon columnKey="bus" sortConfig={sortConfig} /> <i data-lucide="info" className="w-3.5 h-3.5 opacity-40"></i></div>
+                                                </th>
+                                                <th className="px-6 py-5 bg-accent/10 text-accent cursor-pointer hover:bg-accent/20 transition-colors border-b border-slate-200 dark:border-slate-700" onClick={() => requestSort('rawAvg')}>
+                                                    <div className="flex items-center justify-center gap-1.5">{baselineId ? 'GAP %' : 'AVG %'} <SortIcon columnKey="rawAvg" sortConfig={sortConfig} /></div>
+                                                </th>
+                                                <th className="px-5 py-5 text-center cursor-pointer hover:text-accent transition-colors border-b border-slate-200 dark:border-slate-700" onClick={() => requestSort('yoyDiff')} title="YoY Growth: อัตราการเติบโตเทียบกับปีที่ผ่านมา">
+                                                    <div className="flex items-center justify-center gap-1.5">YoY <SortIcon columnKey="yoyDiff" sortConfig={sortConfig} /></div>
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
+                                            {processedData.map((v) => {
+                                                const isSelected = selectedIds.includes(v.id);
+                                                const colorIndex = selectedIds.indexOf(v.id);
+                                                const dotColor = isSelected ? CHART_COLORS[colorIndex % 5] : 'transparent';
+                                                
+                                                return (
+                                                <React.Fragment key={v.id}>
+                                                <tr className={`transition-all bg-white dark:bg-slate-950 ${baselineId === v.id ? 'bg-blue-50/60 dark:bg-blue-900/30' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}>
+                                                    <td className="px-6 py-4 text-center sticky-col bg-inherit">
+                                                        <div className="flex justify-center gap-2.5">
+                                                            <button onClick={() => setExpandedId(expandedId === v.id ? null : v.id)} className="p-2.5 text-slate-400 hover:text-accent bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors"><i data-lucide={expandedId===v.id ? 'minus' : 'plus'} className="w-4 h-4"></i></button>
+                                                            <button onClick={() => {setBaselineId(baselineId === v.id ? null : v.id); if(baselineId!==v.id) showToast(`ตั้ง ${v.name} เป็น Baseline`);}} className={`p-2.5 rounded-xl shadow-sm border transition-all ${baselineId===v.id ? 'bg-accent text-white border-accent scale-105' : 'text-slate-400 hover:text-accent bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`} title="Set as Baseline"><i data-lucide="target" className="w-4 h-4"></i></button>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-5 py-4">
+                                                        <div className="font-bold text-sm dark:text-white flex items-center gap-3">
+                                                            <div className={`w-3 h-3 rounded-full border ${isSelected ? 'border-transparent' : 'border-slate-300 dark:border-slate-600 shadow-inner'}`} style={{backgroundColor: dotColor}}></div> {v.name} <span className="text-[10px] opacity-40 font-black">({v.group[0]})</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-5 py-4 text-center text-sm"><FormatScore value={baselineId ? v.gap.key : v.scores.key} isGap={!!baselineId && baselineId !== v.id} /></td>
+                                                    <td className="px-5 py-4 text-center text-sm"><FormatScore value={baselineId ? v.gap.emg : v.scores.emg} isGap={!!baselineId && baselineId !== v.id} /></td>
+                                                    <td className="px-5 py-4 text-center text-sm"><FormatScore value={baselineId ? v.gap.bus : v.scores.bus} isGap={!!baselineId && baselineId !== v.id} /></td>
+                                                    <td className="px-6 py-4 text-center bg-accent/5 font-black text-lg text-accent"><FormatScore value={baselineId ? v.gap.avg : v.avg} isGap={!!baselineId && baselineId !== v.id} /></td>
+                                                    <td className="px-5 py-4 text-center">
+                                                        <span className={`inline-flex items-center font-bold text-xs px-3 py-1.5 rounded-lg shadow-sm ${v.yoyDiff > 0 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' : 'bg-slate-100 text-slate-500 dark:bg-slate-800'}`}>
+                                                            {v.yoyDiff > 0 ? '+' : ''}{v.yoyDiff}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                                {expandedId === v.id && (
+                                                    <tr className="bg-slate-50/50 dark:bg-slate-900/30">
+                                                        <td colSpan="7" className="p-8">
+                                                            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+                                                                <div className="space-y-4">
+                                                                    <div className="text-xs font-black text-slate-500 uppercase tracking-widest border-b dark:border-slate-700 pb-2">Key Core Breakdown</div>
+                                                                    <div className="text-sm"><span className="text-slate-600 dark:text-slate-400 font-bold mb-2 block">Discovery & Mapping</span> <MicroBar score={v.sub.key.discovery} colorClass="bg-blue-500" /></div>
+                                                                    <div className="text-sm"><span className="text-slate-600 dark:text-slate-400 font-bold mb-2 block">Traffic Analysis</span> <MicroBar score={v.sub.key.traffic} colorClass="bg-blue-500" /></div>
+                                                                </div>
+                                                                <div className="space-y-4">
+                                                                    <div className="text-xs font-black text-slate-500 uppercase tracking-widest border-b dark:border-slate-700 pb-2">Innovation Tech</div>
+                                                                    <div className="text-sm"><span className="text-slate-600 dark:text-slate-400 font-bold mb-2 block">AI / LLM Advisor</span> <MicroBar score={v.sub.emg.ai} colorClass="bg-purple-500" /></div>
+                                                                    <div className="text-sm"><span className="text-slate-600 dark:text-slate-400 font-bold mb-2 block">eBPF Monitoring</span> <MicroBar score={v.sub.emg.ebpf} colorClass="bg-purple-500" /></div>
+                                                                </div>
+                                                                <div className="space-y-4">
+                                                                    <div className="text-xs font-black text-slate-500 uppercase tracking-widest border-b dark:border-slate-700 pb-2">Business ROI</div>
+                                                                    <div className="text-sm"><span className="text-slate-600 dark:text-slate-400 font-bold mb-2 block">Ease of Deployment</span> <MicroBar score={v.sub.bus.ease} colorClass="bg-emerald-500" /></div>
+                                                                    <div className="text-sm"><span className="text-slate-600 dark:text-slate-400 font-bold mb-2 block">Cost Transparency</span> <MicroBar score={v.sub.bus.cost} colorClass="bg-emerald-500" /></div>
+                                                                </div>
+                                                                <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col justify-center gap-4">
+                                                                    <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-900 p-3.5 rounded-2xl"><span className="text-xs text-slate-500 font-bold uppercase">Time-to-Value:</span><span className={`text-xs font-black px-4 py-1.5 rounded-full ${v.matrix.ttv === 'Fast' ? 'bg-emerald-100 text-emerald-600' : (v.matrix.ttv === 'Medium' ? 'bg-orange-100 text-orange-600' : 'bg-red-100 text-red-600')}`}>{v.matrix.ttv}</span></div>
+                                                                    <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-900 p-3.5 rounded-2xl"><span className="text-xs text-slate-500 font-bold uppercase">Learning Curve:</span><span className={`text-xs font-black px-4 py-1.5 rounded-full ${v.matrix.learning === 'Low' ? 'bg-emerald-100 text-emerald-600' : (v.matrix.learning === 'Medium' ? 'bg-orange-100 text-orange-600' : 'bg-red-100 text-red-600')}`}>{v.matrix.learning}</span></div>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                                </React.Fragment>
+                                                )
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            
+                            <div className="mt-8 glass-morphism p-8 rounded-[3rem] shadow-sm text-center ring-1 ring-slate-200 dark:ring-slate-800">
+                                <h3 className="font-black text-sm mb-8 dark:text-white border-b-4 border-accent pb-2 inline-block uppercase tracking-widest">GigaOm Radar 2026 Reference Graph</h3>
+                                <img src="gigaom_radar_v6_2026_pic.jpg" alt="GigaOm Radar 2026 Graph" className="w-full max-w-4xl mx-auto rounded-[2rem] shadow-2xl border-8 border-white dark:border-slate-800" />
+                            </div>
+
+                            <footer className="mt-6 text-center pb-8 no-print">
+                                <p className="text-xs font-black text-slate-400 dark:text-slate-600 uppercase tracking-widest flex items-center justify-center gap-2">
+                                    <i data-lucide="zap" className="w-4 h-4 text-accent animate-pulse"></i> 
+                                    Powered by <span className="text-accent border-b-2 border-accent/20 pb-0.5">IBIGKUNG</span>
+                                </p>
+                            </footer>
+                        </main>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<Dashboard />);
+    </script>
+</body>
+</html>
