@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GigaOm Radar v6 - Fixed Scorer | IBIGKUNG</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; min-height: 100vh; display: flex; flex-direction: column; }
+        .header-gradient { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); }
+        
+        /* FIX: ป้องกันส่วน Control Center โดนบัง */
+        .control-panel { 
+            position: relative; 
+            z-index: 30; 
+            margin-top: -5rem; /* ดันขึ้นไปทับ Header เล็กน้อย */
+        }
+        
+        input[type=range] { -webkit-appearance: none; width: 100%; height: 6px; background: #e2e8f0; border-radius: 5px; outline: none; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; background: #2563eb; cursor: pointer; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.1); }
+        
+        .vendor-item { transition: all 0.2s ease; cursor: pointer; border: 1px solid transparent; }
+        .vendor-item:hover { transform: translateY(-3px); border-color: #3b82f6; background-color: #fff; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        .selected-for-comp { border: 2px solid #3b82f6 !important; background-color: #eff6ff !important; }
+        
+        .preset-btn { 
+            transition: all 0.2s ease; 
+            border: 1px solid #e2e8f0; 
+            background: white;
+            white-space: nowrap;
+        }
+        .preset-btn:hover { border-color: #3b82f6; color: #3b82f6; background: #f8fafc; }
+    </style>
+</head>
+<body class="text-slate-900 antialiased">
+
+    <header class="header-gradient text-white py-24 px-6 relative overflow-hidden">
+        <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center relative z-10">
+            <div class="text-center md:text-left">
+                <h1 class="text-4xl font-extrabold tracking-tight italic">GigaOm Radar v6</h1>
+                <p class="text-blue-400 mt-2 font-bold text-xs uppercase tracking-[0.3em]">Decision Matrix Scorer</p>
+            </div>
+            <div class="hidden md:block bg-white/5 backdrop-blur-md px-6 py-3 rounded-2xl border border-white/10">
+                <p class="text-sm font-bold italic">Interactive Edition v6.0.3 (Fixed)</p>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-6 mb-20 flex-grow w-full">
+        <section class="control-panel bg-white rounded-[2.5rem] p-8 md:p-10 shadow-2xl border border-slate-100 mb-16">
+            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-12 gap-8">
+                <div class="flex items-center">
+                    <div class="bg-blue-600 p-3 rounded-2xl mr-4 shadow-lg shadow-blue-200">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-black text-slate-800 tracking-tight italic">Scenario Intelligence Presets</h2>
+                        <p class="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-wider">Select strategic weighting</p>
+                    </div>
+                </div>
+                
+                <div class="flex flex-wrap gap-3 w-full lg:w-auto">
+                    <button onclick="setPreset(40, 40, 20)" class="preset-btn flex-grow lg:flex-grow-0 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-600 shadow-sm hover:shadow-md">🚀 Innovation</button>
+                    <button onclick="setPreset(60, 10, 30)" class="preset-btn flex-grow lg:flex-grow-0 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-600 shadow-sm hover:shadow-md">🛡️ Stability</button>
+                    <button onclick="setPreset(33, 33, 34)" class="preset-btn flex-grow lg:flex-grow-0 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-600 shadow-sm hover:shadow-md">⚖️ Balanced</button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-12 lg:gap-20">
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center"><span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Key Features</span><span id="labelKey" class="text-2xl font-black text-blue-600 italic">40%</span></div>
+                    <input type="range" id="wKey" min="0" max="100" value="40" oninput="calculate()">
+                </div>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center"><span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Emerging Tech</span><span id="labelEmerging" class="text-2xl font-black text-indigo-600 italic">30%</span></div>
+                    <input type="range" id="wEmerging" min="0" max="100" value="30" oninput="calculate()">
+                </div>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center"><span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Business Value</span><span id="labelBusiness" class="text-2xl font-black text-emerald-600 italic">30%</span></div>
+                    <input type="range" id="wBusiness" min="0" max="100" value="30" oninput="calculate()">
+                </div>
+            </div>
+        </section>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+            <div class="space-y-6">
+                <h3 class="text-sm font-black text-slate-400 uppercase tracking-[0.2em] flex items-center px-4 italic border-l-4 border-orange-500">Market Leaders</h3>
+                <div id="leaderList" class="grid gap-4"></div>
+            </div>
+            <div class="space-y-6">
+                <h3 class="text-sm font-black text-slate-400 uppercase tracking-[0.2em] flex items-center px-4 italic border-l-4 border-blue-500">Challengers</h3>
+                <div id="challengerList" class="grid gap-4"></div>
+            </div>
+        </div>
+
+        <section class="mt-32 border-t border-slate-200 pt-20 mb-20">
+            <div class="text-center mb-12">
+                <h2 class="text-2xl font-black text-slate-800 italic tracking-tight uppercase">Radar Visualization Reference</h2>
+                <div class="h-1 w-20 bg-blue-600 mx-auto mt-4 rounded-full"></div>
+            </div>
+            <div class="max-w-4xl mx-auto">
+                <div class="bg-white p-6 rounded-[2.5rem] shadow-xl border border-slate-50">
+                    <img src="gigaom_radar_v6_2026_pic.jpg" alt="GigaOm Radar v6 Reference" class="w-full h-auto rounded-2xl">
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div id="compareBar" class="hidden fixed bottom-8 left-1/2 -translate-x-1/2 bg-slate-900/95 backdrop-blur-xl text-white px-8 py-5 rounded-3xl shadow-2xl z-50 flex items-center space-x-8 border border-white/10 w-[92%] md:w-auto">
+        <span class="hidden md:block text-[10px] font-black uppercase tracking-widest text-blue-400 italic">Selection</span>
+        <div id="compareNames" class="text-sm font-bold flex gap-2 overflow-x-auto scrollbar-hide"></div>
+        <button onclick="clearCompare()" class="text-[10px] text-slate-400 hover:text-white uppercase font-black pl-4 border-l border-slate-700">Clear</button>
+    </div>
+
+    <footer class="bg-slate-950 text-slate-500 py-16 px-6">
+        <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center">
+            <p class="text-[10px] font-bold uppercase tracking-widest italic text-slate-700">© 2026 GigaOm Scorer | Developed by IBIGKUNG</p>
+        </div>
+    </footer>
+
+    <script>
+        let compareList = [];
+        const vendors = [
+            {name: "ManageEngine", group: "Leader", k: 4.6, e: 2.0, b: 4.3, type: "Hybrid", note: "Outstanding UI/UX with AI-driven root cause analysis."},
+            {name: "SolarWinds", group: "Leader", k: 4.5, e: 2.8, b: 4.2, type: "Hybrid", note: "Robust observability via Secure by Design framework."},
+            {name: "Kentik", group: "Leader", k: 4.4, e: 3.0, b: 3.7, type: "SaaS", note: "Strongest in LLM AI Advisor and traffic insights."},
+            {name: "Riverbed", group: "Leader", k: 4.1, e: 3.7, b: 4.0, type: "Hybrid", note: "Leader in Digital Twin and Agentic AI technology."},
+            {name: "Broadcom", group: "Leader", k: 4.5, e: 1.8, b: 4.3, type: "Hybrid", note: "Unmatched scalability for global enterprise networks."},
+            {name: "NETSCOUT", group: "Leader", k: 4.3, e: 1.8, b: 3.8, type: "Hybrid", note: "Superior packet-level analysis and ASI technology."},
+            {name: "BlueCat Networks", group: "Challenger", k: 4.4, e: 2.7, b: 3.5, type: "SaaS", note: "Innovative DDI-based network observability."},
+            {name: "Datadog", group: "Challenger", k: 3.4, e: 2.7, b: 3.5, type: "SaaS", note: "Native eBPF support for modern cloud environments."},
+            {name: "Forward Networks", group: "Challenger", k: 2.8, e: 2.2, b: 3.3, type: "SaaS", note: "Verification-based digital twin modeling leader."}
+        ];
+
+        function setPreset(k, e, b) {
+            document.getElementById('wKey').value = k;
+            document.getElementById('wEmerging').value = e;
+            document.getElementById('wBusiness').value = b;
+            calculate();
+        }
+
+        function toggleCompare(name) {
+            if (compareList.includes(name)) {
+                compareList = compareList.filter(n => n !== name);
+            } else if (compareList.length < 2) {
+                compareList.push(name);
+            }
+            renderCompareBar();
+            calculate();
+        }
+
+        function renderCompareBar() {
+            const bar = document.getElementById('compareBar');
+            const names = document.getElementById('compareNames');
+            if (compareList.length > 0) {
+                bar.classList.remove('hidden');
+                names.innerHTML = compareList.map(n => `<span class="bg-blue-600/40 px-3 py-1 rounded-lg border border-blue-500/50 text-[10px] italic font-black whitespace-nowrap">${n}</span>`).join('');
+            } else { bar.classList.add('hidden'); }
+        }
+
+        function clearCompare() { compareList = []; renderCompareBar(); calculate(); }
+
+        function calculate() {
+            const wk = parseInt(document.getElementById('wKey').value);
+            const we = parseInt(document.getElementById('wEmerging').value);
+            const wb = parseInt(document.getElementById('wBusiness').value);
+            const sum = wk + we + wb || 1;
+
+            document.getElementById('labelKey').innerText = Math.round((wk/sum)*100) + '%';
+            document.getElementById('labelEmerging').innerText = Math.round((we/sum)*100) + '%';
+            document.getElementById('labelBusiness').innerText = Math.round((wb/sum)*100) + '%';
+
+            const scored = vendors.map(v => ({
+                ...v,
+                total: ((v.k * wk + v.e * we + v.b * wb) / sum).toFixed(2)
+            })).sort((a, b) => b.total - a.total);
+
+            render(scored);
+        }
+
+        function render(list) {
+            const genHtml = (items) => items.map((v, i) => `
+                <div onclick="toggleCompare('${v.name}')" class="vendor-item bg-white p-6 rounded-[2rem] shadow-sm ${compareList.includes(v.name) ? 'selected-for-comp shadow-md' : ''}">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex items-center gap-4">
+                            <span class="text-xs font-black text-slate-200 italic">#${i+1}</span>
+                            <div>
+                                <h4 class="font-black text-slate-800 text-base tracking-tight">${v.name}</h4>
+                                <span class="text-[8px] font-black bg-blue-50 text-blue-600 px-2 py-0.5 rounded tracking-widest uppercase">${v.type}</span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-black text-blue-800 italic leading-none">${v.total}</div>
+                            <span class="text-[7px] font-black text-slate-400 uppercase tracking-widest">Weight Score</span>
+                        </div>
+                    </div>
+                    <p class="text-[10px] font-bold text-slate-400 italic leading-relaxed border-t border-slate-50 pt-3">"${v.note}"</p>
+                </div>
+            `).join('');
+
+            document.getElementById('leaderList').innerHTML = genHtml(list.filter(v => v.group === 'Leader'));
+            document.getElementById('challengerList').innerHTML = genHtml(list.filter(v => v.group === 'Challenger'));
+        }
+
+        calculate();
+    </script>
+</body>
+</html>
